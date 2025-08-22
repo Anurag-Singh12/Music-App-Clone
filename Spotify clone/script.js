@@ -1,6 +1,6 @@
-let currentSong = new Audio(); //global variable
+let currentSong = new Audio(); //global variable Which Helps to Play one at a time
 let songs;
-
+let currFolder;
 
 function secondsToMinutesSeconds(seconds) { //secondsToMinutesSeconds for music duration
     if (isNaN(seconds) || seconds < 0) {
@@ -16,8 +16,10 @@ function secondsToMinutesSeconds(seconds) { //secondsToMinutesSeconds for music 
     return `${formattedMinutes}:${formattedSeconds}`;
 }
 
-async function getsongs() {//currenttarget used for click whole card main thing yaad rakhna comment mei add krke
-  let a = await fetch("http://127.0.0.1:5500/Spotify Clone/songs"); //fetching songs from the folder
+//FETCHING SONGS
+async function getsongs(folder) {//currenttarget used for click whole card main thing yaad rakhna comment mei add krke
+  currFolder = folder;
+  let a = await fetch(`http://127.0.0.1:5500/Spotify clone/${folder}/`); //fetching songs from the folder
   let response = await a.text();
   console.log(response);
   let div = document.createElement("div"); //saving a(anchor) tags in this div
@@ -26,66 +28,122 @@ async function getsongs() {//currenttarget used for click whole card main thing 
 
   //now use loops to get href attribute in a tags
 
-  let songs = []; //array for saving songs
+  songs = []; //array for saving songs
   for (let index = 0; index < as.length; index++) {
     const element = as[index];
     if (element.href.endsWith(".mp3")) {
       // if it's ends with mp3 file it will push
-      songs.push(element.href.split("/songs/")[1]);
+      songs.push(element.href.split(`/${folder}/`)[1]); //split /songs/ it will provide array before and after /song/ 
     }
   }
   // console.log(songs); // to check in do we get songs from above code
   //for now return it (ideally use server i.e API)
-  return songs;
-}
+  // return songs;
 
-const playMusic = (track) => {
-  currentSong.src = "/songs/" + track;
-  currentSong.play();
-  play.src = "pause.svg"
-  document.querySelector(".songinfo").innerHTML = track
-  document.querySelector(".songtime").innerHTML = "00:00 / 00:00"
 
-};
 
-async function main() {
-  //get the list of all the song
-  songs = await getsongs();
-  console.log(songs);
 
-  //show all the songs in the playlist
+//show all the songs in the playlist
 
-  let songUL = document
-    .querySelector(".songList")
-    .getElementsByTagName("ul")[0]; //[0] means ul ka first item jo hai
+  let songUL = document.querySelector(".songList").getElementsByTagName("ul")[0]; //[0] means ul ka first item jo hai
+  songUL.innerHTML = ""
   for (const song of songs) {
     //using for of loop b/c it will store as array
-    songUL.innerHTML =
-      songUL.innerHTML +
-      `<li> <img class="invert" src="/img/music.svg" alt="">
+    songUL.innerHTML = songUL.innerHTML + `<li> <img class="invert" src="img/music.svg" alt="">
                         <div class="info">
                           <div> ${song.replaceAll("%20", " ")}</div>
-                          <div>Sng Artist</div>
+                          <div>Song Artist</div>
                         </div>
 
                         <div class="playnow">
                           <span>Play Now</span> 
-                        <img class="invert" src="img/play.svg" alt="">
-                        </div> </li>`; //`<li> ${song.replaceAll("%20", " ")}</li>` use this to add them in a list and replace %20 and garbage data
+                        <img class="" src="img/play.svg" alt="">
+                        </div> </li>`; //`<li> ${song.replaceAll("%20", " ")}</li>` use this to add them in a list and replace %20 and with "" a space
   }
 
-  // Attach an event listener to each song and stored in array and using for each loop
+  // Attach an event listener to each song and stored in array by using for each loop
 
-  Array.from(
-    document.querySelector(".songList").getElementsByTagName("li")
-  ).forEach((e) => {
-    e.addEventListener("click", (element) => {
-      console.log(e.querySelector(".info").firstElementChild.innerHTML);
-      playMusic(e.querySelector(".info").firstElementChild.innerHTML.trim());
-    });
-  });
+  Array.from(document.querySelector(".songList").getElementsByTagName("li")).forEach(e => {
+        e.addEventListener("click", element => {
+            playMusic(e.querySelector(".info").firstElementChild.innerHTML.trim())
 
-  //attach an event listener to play , next and previous
+        })
+    })
+
+    return songs
+}
+
+
+
+//Function for Playing Songs While clicking on it
+const playMusic = (track, pause = false) => {
+  currentSong.src = `/${currFolder}/` + track;
+  if(!pause){
+    currentSong.play();
+    play.src = "img/pause.svg"
+  }
+  // play.src = "pause.svg" //by default when the song is playing
+  document.querySelector(".songinfo").innerHTML = decodeURI(track)   //show the track name
+  document.querySelector(".songtime").innerHTML = "00:00 / 00:00" //show the duration
+};
+
+
+async function displayAlbums() {
+    console.log("displaying albums")
+    let a = await fetch(`http://127.0.0.1:5500/Spotify clone/${folder}/`);
+    let response = await a.text();
+    let div = document.createElement("div")
+    div.innerHTML = response;
+    let anchors = div.getElementsByTagName("a")
+    let cardContainer = document.querySelector(".cardContainer")
+    
+    let array = Array.from(anchors)
+    for (let index = 0; index < array.length; index++) {
+        const e = array[index]; 
+        if (e.href.includes("/songs") && !e.href.includes(".htaccess")) {
+            let folder = e.href.split("/").slice(-2)[0]
+            // Get the metadata of the folder
+            let a = await fetch(`/songs/${folder}/info.json`)
+            let response = await a.json(); 
+
+            cardContainer.innerHTML = cardContainer.innerHTML + ` <div data-folder="${folder}" class="card">
+            <div class="play">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5 20V4L19 12L5 20Z" stroke="#141B34" fill="#000" stroke-width="1.5"
+                        stroke-linejoin="round" />
+                </svg>
+            </div>
+
+            <img src="/songs/${folder}/cover.jpg" alt="">
+            <h2>${response.title}</h2>
+            <p>${response.description}</p>
+        </div>`
+        }
+    }
+
+    // Load the playlist whenever card is clicked
+    Array.from(document.getElementsByClassName("card")).forEach(e => { 
+        e.addEventListener("click", async item => {
+            console.log("Fetching Songs")
+            songs = await getSongs(`songs/${item.currentTarget.dataset.folder}`)  
+            playMusic(songs[0])
+
+        })
+    })
+}
+
+
+//MAIN FUNCTION
+async function main() {
+  //Get the list of all the song
+  await getsongs("songs/Punjabi");
+  console.log(songs);
+  playMusic(songs[0], true) //play first song and true pause which is false by default
+
+
+  displayAlbums()
+  //Attaching an event listener to play , next and previous
   play.addEventListener("click", () => {
     if (currentSong.paused) {
       currentSong.play();
@@ -98,26 +156,26 @@ async function main() {
 
   // Listen for timeupdate event
     currentSong.addEventListener("timeupdate", () => {
-        document.querySelector(".songtime").innerHTML = `${secondsToMinutesSeconds(currentSong.currentTime)} / ${secondsToMinutesSeconds(currentSong.duration)}`
+        document.querySelector(".songtime").innerHTML = `${secondsToMinutesSeconds(currentSong.currentTime)} / ${secondsToMinutesSeconds(currentSong.duration)}` // 00: 00 format
         document.querySelector(".circle").style.left = (currentSong.currentTime / currentSong.duration) * 100 + "%";//logic for seekbar
 
     })
 
     // Add an event listener to seekbar
     document.querySelector(".seekbar").addEventListener("click", e => {
-        let percent = (e.offsetX / e.target.getBoundingClientRect().width) * 100;
+        let percent = (e.offsetX / e.target.getBoundingClientRect().width) * 100; //offsetX is the direction and getBoundingClientRect() given by js default shows the where we are on the page
         document.querySelector(".circle").style.left = percent + "%";
-        currentSong.currentTime = ((currentSong.duration) * percent) / 100
+        currentSong.currentTime = ((currentSong.duration) * percent) / 100;
     })
 
     //Add an event listener for hamburger
     document.querySelector(".hamburger").addEventListener("click",()=>{
-      document.querySelector(".left").style.left = "0" //-100 to 0 (from css)
+      document.querySelector(".left").style.left = "0" //-130 to 0 (from css to make it visible)
     })
 
     // Add an event listener for close button
     document.querySelector(".close").addEventListener("click", () => {
-        document.querySelector(".left").style.left = "-120%"
+        document.querySelector(".left").style.left = "-120%" //0 to -120 (from css to hide)
     })
 
     // Add an event listener to previous
@@ -151,9 +209,9 @@ async function main() {
     })
 
 
-  //play the first song
+//  play the first song
   // var audio = await new audio(songs[0]);
-  //audio.play();
+  // audio.play();
 }
 
 main()

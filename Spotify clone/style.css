@@ -95,11 +95,17 @@ body {
   background-color: #1f1f1f;
   position: relative;
   /* transition: all 0.5s; */
+  /* Animation support */
+  transition: all 0.3s ease;
+  transform-style: preserve-3d;
 }
 .card:hover {
   background: linear-gradient(218deg, #727070cf, #1f1f1f);
   cursor: pointer;
   --a: 1;
+  /* Z-axis effect */
+  transition: all 0.4s ease-out;
+  transform: translateY(-1px) scale(1.002);
 }
 .card > * {
   padding-top: 10px;
@@ -207,6 +213,17 @@ body {
   margin: 12px 0;
   padding: 13px;
   border-radius: 5px;
+  /* Animation support */
+  transition: all 0.1s ease;
+  transform-style: preserve-3d;
+  /* will-change: transform; */
+}
+.songList ul li:hover{
+  border: 1px solid rgb(94, 80, 248);
+  background-color: rgba(31, 32, 31, 0.716);
+  transition: all 0.4s ease-out;
+   /* Z-axis effect */
+  transform: translateY(-1px) scale(1.002);
 }
 .info {
   font-size: 13px;
